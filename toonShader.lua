@@ -15,7 +15,9 @@ function setToonShader(part,outlineSize,outlineColor,outlinePushback,glowingOutl
       part:getParent():addChild(part:copy(outlineName))
       local outline = part:getParent()[outlineName]
       outline:setPrimaryRenderType("CUTOUT_CULL")
-      outline:setMatrix(matrices.mat4():scale(vec(-1,-1,-1)):rotate(vec(180,180,0)) * (1 + 0.1 * outlinePushback))
+      local pivot = outline:getPivot()
+      local rot =outline:getRot()
+      outline:setMatrix(matrices.mat4():scale(vec(-1,-1,-1)):rotate(vec(180,180,0)):translate(-pivot):rotate(rot):translate(pivot) * (1 + 0.1 * outlinePushback))
       outline:setColor(outlineColor)
       outline:setPrimaryTexture("CUSTOM",outlineTexture)
       if glowingOutlines then outline:setLight(15) end
