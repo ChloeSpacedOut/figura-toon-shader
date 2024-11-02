@@ -1,5 +1,5 @@
 # Toon Shader
-A script that accurately re-creates catoon shaders you can apply to your avatar. Outlines are based on the lighting normals, so it works accurately for meshes. This isn't technically shaders.
+A script that accurately re-creates cartoon shaders you can apply to your avatar. Outlines are based on the lighting normals, so it works accurately for meshes. This isn't technically shaders.
 
 ## Setup
 First, add `toonShader.lua` to your avatar. Once you have, require it with `require("toonShader")`, or add it to your autoscripts in avatar.json.
