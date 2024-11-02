@@ -1,6 +1,8 @@
 local outlineTexture = textures:newTexture("outlineTexture",1,1)
 outlineTexture:setPixel(0,0,vec(1,1,1))
 
+partsToUpdate = {}
+
 function setToonShader(part,outlineSize,outlineColor,outlinePushback,glowingOutlines,doOutline,doOutlineShading,doModelShading)
   if not outlineSize  then outlineSize = 0.5 end
   if not outlineColor then outlineColor = vec(1,1,1) end
@@ -14,6 +16,9 @@ function setToonShader(part,outlineSize,outlineColor,outlinePushback,glowingOutl
       local outlineName = part:getName().."Outline"
       part:getParent():addChild(part:copy(outlineName))
       local outline = part:getParent()[outlineName]
+      if outlinePushback ~= 0 then
+        table.insert(partsToUpdate,{part = outline, pushBack = outlinePushback})
+      end
       outline:setPrimaryRenderType("CUTOUT_CULL")
       local pivot = outline:getPivot()
       local rot =outline:getRot()
@@ -63,5 +68,19 @@ function setToonShader(part,outlineSize,outlineColor,outlinePushback,glowingOutl
   end
   for _,child in pairs(part:getChildren()) do
     setToonShader(child,outlineSize,outlineColor,outlinePushback,glowingOutlines,doOutline,doOutlineShading,doModelShading)
+  end
+end
+
+if host:isHost() then
+  function events.render(delta,context)
+    if context == "RENDER" then
+      for k,v in pairs(partsToUpdate) do
+        v.part:setMatrix(matrices.mat4() * (1 + 0.1 * v.pushBack))
+      end
+    else
+      for k,v in pairs(partsToUpdate) do
+        v.part:setMatrix(matrices.mat4())
+      end
+    end
   end
 end
