@@ -26,7 +26,7 @@ function setToonShader(part,outlineSize,outlineColor,outlinePushback,glowingOutl
       outline:setPrimaryRenderType("CUTOUT_CULL")
       local pivot = outline:getPivot()
       local rot =outline:getRot()
-      outline:setMatrix(matrices.mat4() * (1 + 0.1 * outlinePushback))
+      outline:setMatrix(matrices.mat4():translate(-pivot):rotate(rot):translate(pivot) * (1 + 0.1 * outlinePushback))
       outline:setColor(outlineColor)
       outline:setPrimaryTexture("CUSTOM",outlineTexture)
       if glowingOutlines then outline:setLight(15) end
@@ -80,11 +80,15 @@ if host:isHost() then
   function events.render(delta,context)
     if context == "RENDER" then
       for _,v in pairs(matrixUpdateParts) do
-        v.part:setMatrix(matrices.mat4() * (1 + 0.1 * v.pushBack))
+        local pivot = v.part:getPivot()
+        local rot = v.part:getRot()
+        v.part:setMatrix(matrices.mat4():translate(-pivot):rotate(rot):translate(pivot) * (1 + 0.1 * v.pushBack))
       end
     else
       for _,v in pairs(matrixUpdateParts) do
-        v.part:setMatrix(matrices.mat4())
+        local pivot = v.part:getPivot()
+        local rot = v.part:getRot()
+        v.part:setMatrix(matrices.mat4():translate(-pivot):rotate(rot):translate(pivot))
       end
     end
     if doFirstPersonCorrect then
