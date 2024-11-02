@@ -1,7 +1,10 @@
+local doFirstPersonCorrect = true -- this costs render instructions for the host, may cause lag in larger models
+
 local outlineTexture = textures:newTexture("outlineTexture",1,1)
 outlineTexture:setPixel(0,0,vec(1,1,1))
 
-partsToUpdate = {}
+local parts = {}
+local matrixUpdateParts = {}
 
 function setToonShader(part,outlineSize,outlineColor,outlinePushback,glowingOutlines,doOutline,doOutlineShading,doModelShading)
   if not outlineSize  then outlineSize = 0.5 end
@@ -11,13 +14,14 @@ function setToonShader(part,outlineSize,outlineColor,outlinePushback,glowingOutl
   if doOutline == nil then doOutline = true end
   if doOutlineShading == nil then doOutlineShading = false end
   if doModelShading == nil then doModelShading = false end
+  table.insert(parts,part)
   if part:getType() == "CUBE" or part:getType() == "MESH" then
     if doOutline then
       local outlineName = part:getName().."Outline"
       part:getParent():addChild(part:copy(outlineName))
       local outline = part:getParent()[outlineName]
       if outlinePushback ~= 0 then
-        table.insert(partsToUpdate,{part = outline, pushBack = outlinePushback})
+        table.insert(matrixUpdateParts,{part = outline, pushBack = outlinePushback})
       end
       outline:setPrimaryRenderType("CUTOUT_CULL")
       local pivot = outline:getPivot()
@@ -71,15 +75,47 @@ function setToonShader(part,outlineSize,outlineColor,outlinePushback,glowingOutl
   end
 end
 
+local wasLastFirstPerson = false
 if host:isHost() then
   function events.render(delta,context)
     if context == "RENDER" then
-      for k,v in pairs(partsToUpdate) do
+      for _,v in pairs(matrixUpdateParts) do
         v.part:setMatrix(matrices.mat4() * (1 + 0.1 * v.pushBack))
       end
     else
-      for k,v in pairs(partsToUpdate) do
+      for _,v in pairs(matrixUpdateParts) do
         v.part:setMatrix(matrices.mat4())
+      end
+    end
+    if doFirstPersonCorrect then
+      if context == "FIRST_PERSON" then
+        local isLookingDown
+        if player:getRot().x > 37.5 then
+          isLookingDown = true
+        else
+          isLookingDown = false
+        end
+        for _,part in pairs(parts) do
+          for _,texture in pairs(part:getAllVertices()) do
+            for _,vertex in pairs(texture) do
+              if isLookingDown then
+                vertex:setNormal(vec(1,1,0))
+              else
+                vertex:setNormal(vec(1,-1,0))
+              end
+              wasLastFirstPerson = true
+            end
+          end
+        end
+      elseif wasLastFirstPerson then
+        for _,part in pairs(parts) do
+          for _,texture in pairs(part:getAllVertices()) do
+            for _,vertex in pairs(texture) do
+              vertex:setNormal(vec(0,1,0))
+              wasLastFirstPerson = false
+            end
+          end
+        end
       end
     end
   end
